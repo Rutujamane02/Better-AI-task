@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Analysis Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 20px;
+            padding: 10px;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Code Analysis Tool</h1>
+    <p>Paste your code below and click "Analyze Code" to identify performance bottlenecks and get suggestions.</p>
+    <textarea id="codeInput" placeholder="Paste your code here..."></textarea>
+    <br>
+    <button onclick="analyzeCode()">Analyze Code</button>
+    <div class="output" id="output"></div>
+
+    <script>
+        async function pasteCode() {
+            try {
+                // Use Clipboard API to paste code from clipboard
+                const text = await navigator.clipboard.readText();
+                document.getElementById('codeInput').value = text;
+            } catch (error) {
+                document.getElementById('output').innerHTML = `<p style='color:red;'>Failed to paste: ${error.message}</p>`;
+            }
+        }
+
+        async function analyzeCode() {
+            const code = document.getElementById('codeInput').value;
+            const outputDiv = document.getElementById('output');
+
+            if (!code) {
+                outputDiv.innerHTML = "<p style='color:red;'>Please enter code to analyze.</p>";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('code', code);
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                let resultHTML = `<h3>Analysis Results:</h3>`;
+                if (data.bottlenecks.length > 0) {
+                    resultHTML += `<p><strong>Bottlenecks:</strong></p><ul>`;
+                    data.bottlenecks.forEach(bottleneck => {
+                        resultHTML += `<li>${bottleneck}</li>`;
+                    });
+                    resultHTML += `</ul>`;
+                } else {
+                    resultHTML += `<p>No bottlenecks detected.</p>`;
+                }
+
+                if (data.suggestions.length > 0) {
+                    resultHTML += `<p><strong>Suggestions:</strong></p><ul>`;
+                    data.suggestions.forEach(suggestion => {
+                        resultHTML += `<li>${suggestion}</li>`;
+                    });
+                    resultHTML += `</ul>`;
+                }
+
+                outputDiv.innerHTML = resultHTML;
+            } catch (error) {
+                outputDiv.innerHTML = `<p style='color:red;'>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
